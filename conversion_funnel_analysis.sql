@@ -1,5 +1,5 @@
 /*
-PROJECT: E-commerce Conversion Funnel Analysis
+PROJECT: conversion_funnel_analysis.sql
 OBJECTIVE: Create a comprehensive data mart that joins sessions, user profiles, 
            traffic parameters, and product-level events to analyze the customer journey.
 AUTHOR: [Yehor Samoilov]
