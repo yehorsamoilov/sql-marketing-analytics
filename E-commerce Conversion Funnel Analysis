@@ -1,0 +1,67 @@
+/*
+PROJECT: E-commerce Conversion Funnel Analysis
+OBJECTIVE: Create a comprehensive data mart that joins sessions, user profiles, 
+           traffic parameters, and product-level events to analyze the customer journey.
+AUTHOR: [Yehor Samoilov]
+*/
+
+SELECT
+    -- Session Identification and Timing
+    ses.date,
+    ses.ga_session_id,
+    
+    -- Geographic and Technical Session Parameters
+    sep.continent,
+    sep.country,
+    sep.device,
+    sep.browser,
+    sep.mobile_model_name,
+    sep.operating_system,
+    sep.language,
+    
+    -- Traffic Source Attribution
+    sep.medium,
+    sep.channel,
+    IF(sep.medium = 'cpc', 1, 0) AS is_paid_traffic,
+    CASE
+        WHEN sep.medium = 'cpc'      THEN 'Paid'
+        WHEN sep.medium = 'organic'  THEN 'Organic'
+        WHEN sep.medium = 'referral' THEN 'Referral'
+        WHEN sep.medium = '(none)'   THEN 'Direct'
+        ELSE 'Other/Unknown'
+    END AS traffic_type,
+
+    -- User Account and Subscription Status
+    acs.account_id,
+    acc.is_verified,
+    acc.is_unsubscribed,
+    IF(acs.account_id IS NOT NULL, 'Registered', 'Guest') AS user_type,
+
+    -- Product Data (linked via Orders)
+    pro.category,
+    pro.name,
+    pro.price,
+
+    -- Conversion Funnel Metrics (Behavioral Flags)
+    -- Using MAX(IF) to identify if an event occurred at least once during the session
+    MAX(IF(ev.event_name = 'view_item', 1, 0)) AS has_viewed_item,
+    MAX(IF(ev.event_name = 'add_to_cart', 1, 0)) AS has_added_to_cart,
+    MAX(IF(ev.event_name = 'begin_checkout', 1, 0)) AS has_started_checkout,
+    MAX(IF(ord.item_id IS NOT NULL, 1, 0)) AS has_purchased
+
+FROM `data-analytics-mate.DA.session` AS ses
+LEFT JOIN `data-analytics-mate.DA.session_params` AS sep
+    ON ses.ga_session_id = sep.ga_session_id
+LEFT JOIN `data-analytics-mate.DA.account_session` AS acs
+    ON ses.ga_session_id = acs.ga_session_id
+LEFT JOIN `data-analytics-mate.DA.account` AS acc
+    ON acs.account_id = acc.id
+LEFT JOIN `data-analytics-mate.DA.order` AS ord
+    ON ses.ga_session_id = ord.ga_session_id
+LEFT JOIN `data-analytics-mate.DA.product` AS pro
+    ON ord.item_id = pro.item_id
+LEFT JOIN `data-analytics-mate.DA.event_params` AS ev
+    ON ses.ga_session_id = ev.ga_session_id
+
+GROUP BY 
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20;
